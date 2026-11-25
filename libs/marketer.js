@@ -1,213 +1,144 @@
-const fs = require('fs');
-const {parseArgs} = require('node:util');
-const {mapTerminal, mapCommodity, mapPrice}= require('./libs/mapper');
 
-const srch = (clue, target)=> {
-    const fragments = clue.split(',');
-    if(fragments.length>1){
-        for(const frag of fragments){
-            if(!srch(frag, target)){
-                return false;
+const {mapTerminal, mapCommodity, mapPrice}= require('./mapper');
+const {srch, formatUEC} = require("./utils");
+
+export default function (values, writeFunc, printFunc, data){
+    let db = { ...data };
+
+    if(values.save){
+        const tosave = {
+            amount: values.amount,
+            profit: values.profit,
+            margin: values.margin,
+            cost: values.cost
+        }
+
+        writeFunc("user.cfg", JSON.stringify(tosave, undefined, 2));
+    }
+
+    if(values.breakdown && values.amount){
+        const sizes = [32, 24, 16, 8, 4, 2, 1];
+
+        let maxcrate = Number(values.breakdown);
+        let cargo = Number(values.amount);
+
+        const crates = {};
+        let si = sizes.indexOf(maxcrate); 
+        while(cargo > 0){
+            const sz = sizes[si];
+            if(sz > cargo){
+                si++;
+                continue;
             }
+
+            crates[sz] = (crates[sz] || 0) + 1;
+            cargo -= sz;
+        }   
+
+        let o = "Crates: ";
+        for(const cr in crates){
+            o = `${o} [${crates[cr]} x ${cr}scu]`;
         }
-
-        return true;
-    }
-    else
-    {
-        return target.toLowerCase().indexOf(clue.replaceAll('_',' ').toLowerCase()) >= 0;
-    }
-}
-
-const opts = {
-    sync: {type: 'boolean', default: false},
-    syncall: {type: 'boolean', default: false},
-    from: { type: 'string', short: 'f'},
-    to: {type: 'string', short: 't'},
-    filter: {type: 'string'},
-    commodity: {type: 'string', short: 'd'},
-    stock: {type: 'boolean', default: false},
-    breakdown: {type: 'string', short: 'b'},
-    bestbuy: {type: 'string'},
-    bestsell: {type: 'string'},
-    minmax: {type: 'boolean', default: false},
-    shop: {type: 'string'},
-    save: {type: 'boolean', default: false},
-    nocfg: {type: 'boolean', default: false, short: "n"},
-    help: {type: 'boolean', short: 'h', default: false},
-    amount: { type: 'string', short: 'a'},
-    margin: {type: 'string', short: 'm'},
-    cost: {type: 'string', short: 'c'},
-    profit: {type: 'string', short: 'p'}
-}
-
-const {values: pre_vals} = parseArgs({
-    options: opts
-});
-
-let usercfg = {};
-if(!pre_vals.nocfg && fs.existsSync("db/user.cfg")){
-    usercfg = JSON.parse(fs.readFileSync("db/user.cfg", "utf-8"));
-}
-
-const cfg_opts = {
-    amount: { type: 'string', short: 'a', default: usercfg.amount},
-    margin: {type: 'string', short: 'm', default: usercfg.margin},
-    cost: {type: 'string', short: 'c', default: usercfg.cost},
-    profit: {type: 'string', short: 'p', default: usercfg.profit}
-}
-
-const {values} = parseArgs({
-    options: {
-        ...opts,
-        ...cfg_opts
-    }
-});
-
-if (!fs.existsSync("db")) {
-  fs.mkdirSync("db", { recursive: true });
-}   
-
-const formatUEC = x=> {
-    if(x<5000) return x;
-    if(x<5000000) return `${Math.floor(x/1000)}k`;
-    return `${Math.floor(x/1000000)}m`;
-};
-
-const db = {
-    terminals: fs.existsSync("db/terminals.json") ? JSON.parse(fs.readFileSync("db/terminals.json", 'utf8')) : {},
-    commodities: fs.existsSync("db/commodities.json") ? JSON.parse(fs.readFileSync("db/commodities.json", 'utf8')) : {},
-    prices: fs.existsSync("db/prices.json") ? JSON.parse(fs.readFileSync("db/prices.json", 'utf8')) : {},
-    markets: fs.existsSync("db/markets.json") ? JSON.parse(fs.readFileSync("db/markets.json", 'utf8')) : {},
-}
-
-if(values.save){
-    const tosave = {
-        amount: values.amount,
-        profit: values.profit,
-        margin: values.margin,
-        cost: values.cost
+        printFunc(o);
+        return;
     }
 
-    fs.writeFileSync("db/user.cfg", JSON.stringify(tosave, undefined, 2));
-}
+    if(values.sync || values.syncall){
+        const execute = async() => {
+            if(values.syncall){
+                const r1 = await fetch("https://api.uexcorp.uk/2.0/terminals");
+                const terminals = await r1.json();
+                const termSave = terminals.data.map(x=>mapTerminal(x)).reduce((a,i)=>{a[i.id] = i; return a}, {});
+                writeFunc("terminals.json", JSON.stringify(termSave, null, 2));
+                db.terminals = termSave;
+                
+                const r2 = await fetch("https://api.uexcorp.uk/2.0/commodities");
+                const commodities = await r2.json();
+                const comSave = commodities.data.map(x=>mapCommodity(x)).reduce((a,i)=>{a[i.id] = i; return a}, {});
+                writeFunc("commodities.json", JSON.stringify(comSave, null, 2));
+                db.commodities = comSave;
+            }
 
-if(values.breakdown && values.amount){
-    const sizes = [32, 24, 16, 8, 4, 2, 1];
-
-    let maxcrate = Number(values.breakdown);
-    let cargo = Number(values.amount);
-
-    const crates = {};
-    let si = sizes.indexOf(maxcrate); 
-    while(cargo > 0){
-        const sz = sizes[si];
-        if(sz > cargo){
-            si++;
-            continue;
-        }
-
-        crates[sz] = (crates[sz] || 0) + 1;
-        cargo -= sz;
-    }   
-
-    let o = "Crates: ";
-    for(const cr in crates){
-        o = `${o} [${crates[cr]} x ${cr}scu]`;
-    }
-    console.log(o);
-    return;
-}
-
-if(values.sync || values.syncall){
-    const execute = async() => {
-        if(values.syncall){
-            const r1 = await fetch("https://api.uexcorp.uk/2.0/terminals");
-            const terminals = await r1.json();
-            const termSave = terminals.data.map(x=>mapTerminal(x)).reduce((a,i)=>{a[i.id] = i; return a}, {});
-            fs.writeFileSync("db/terminals.json", JSON.stringify(termSave, null, 2), 'utf8');
-            db.terminals = termSave;
+            const r3 = await fetch("https://api.uexcorp.uk/2.0/commodities_prices_all");
+            const prices = await r3.json();
+            const priceSave = prices.data.map(x=>mapPrice(x))
+                .map(x=>({
+                    ...x,
+                    commodity: db.commodities[x.commodity].name,
+                    terminal: db.terminals[x.terminal].name,
+                    termid: x.terminal
+                }));
             
-            const r2 = await fetch("https://api.uexcorp.uk/2.0/commodities");
-            const commodities = await r2.json();
-            const comSave = commodities.data.map(x=>mapCommodity(x)).reduce((a,i)=>{a[i.id] = i; return a}, {});
-            fs.writeFileSync("db/commodities.json", JSON.stringify(comSave, null, 2), 'utf8');
-            db.commodities = comSave;
-        }
+            writeFunc("prices.json", JSON.stringify(priceSave, null, 2));
+            db.prices = priceSave;
 
-        const r3 = await fetch("https://api.uexcorp.uk/2.0/commodities_prices_all");
-        const prices = await r3.json();
-        const priceSave = prices.data.map(x=>mapPrice(x))
-            .map(x=>({
-                ...x,
-                commodity: db.commodities[x.commodity].name,
-                terminal: db.terminals[x.terminal].name,
-                termid: x.terminal
-            }));
-        
-        fs.writeFileSync("db/prices.json", JSON.stringify(priceSave, null, 2), 'utf8');
-        db.prices = priceSave;
+            const markets = {};
+            db.prices.forEach(x=>{
+                const market = markets[x.terminal] || 
+                {
+                    name: x.terminal,
+                    locator: db.terminals[x.termid].locator,
+                    sell: [],
+                    buy: []
+                };
 
-        const markets = {};
-        db.prices.forEach(x=>{
-            const market = markets[x.terminal] || 
-            {
-                name: x.terminal,
-                locator: db.terminals[x.termid].locator,
-                sell: [],
-                buy: []
-            };
+                if(x.sells){
+                    market.sell.push({
+                        name: x.commodity,
+                        price: x.sellPrice,
+                        amount: x.sellAmount,
+                    })
+                }
+                
+                if(x.buys){
+                    market.buy.push({
+                        name: x.commodity,
+                        price: x.buyPrice,
+                        amount: x.buyAmount
+                    })
+                }
 
-            if(x.sells){
-                market.sell.push({
-                    name: x.commodity,
-                    price: x.sellPrice,
-                    amount: x.sellAmount,
-                })
-            }
+                markets[x.terminal] = market;
+            });
             
-            if(x.buys){
-                market.buy.push({
-                    name: x.commodity,
-                    price: x.buyPrice,
-                    amount: x.buyAmount
-                })
-            }
+            writeFunc("markets.json", JSON.stringify(markets, null, 2));
+            db.markets = markets;
+        };
 
-            markets[x.terminal] = market;
-        });
-        
-        fs.writeFileSync("db/markets.json", JSON.stringify(markets, null, 2), 'utf8');
-        db.markets = markets;
-    };
+        execute();
+    }
 
-    execute();
+    if(values.help){
+        printFunc(`
+            --sync    //sync prices
+            --syncall    //sync all data
+            -f, --from <string>    //source market, required, best match
+            -t, --to <number>    //destination market, best match
+            --filter <string>    //filter by destination names
+            -d, --commodity <string>    //filter by commodity names
+            -a, --amount <number>    //scu to calculate profits and costs
+            -m, --margin <number>    //1-99 minimum profit margin in percents
+            -c, --cost <number>    //12345 or 12k, maximum uec willing to spend
+            -p, --profit <number>    //12345 or 12k, minimum profit in uec
+            --stock    //hide anything with 0 stock
+            -b, --breakdown <number>    //breakdown scu into crate sizes, provide maximum crate size as number, use with --amount to specify total scu
+            --bestbuy <string>    //cheapest commodity location, can use with --filter
+            --bestsell <string>    //most expensive sell location, can use with --filter
+            --minmax //get best profits for all commodities
+            --shop <string> //list shop prices
+            --save // saves --amount, --margin, --cost, --profit values as defaults
+            -n, --nocfg //skip saved settings
+            -h, --help    //this message
+        `);
+        return;
+    }
 }
 
-if(values.help){
-    console.log(`
-        --sync    //sync prices
-        --syncall    //sync all data
-        -f, --from <string>    //source market, required, best match
-        -t, --to <number>    //destination market, best match
-        --filter <string>    //filter by destination names
-        -d, --commodity <string>    //filter by commodity names
-        -a, --amount <number>    //scu to calculate profits and costs
-        -m, --margin <number>    //1-99 minimum profit margin in percents
-        -c, --cost <number>    //12345 or 12k, maximum uec willing to spend
-        -p, --profit <number>    //12345 or 12k, minimum profit in uec
-        --stock    //hide anything with 0 stock
-        -b, --breakdown <number>    //breakdown scu into crate sizes, provide maximum crate size as number, use with --amount to specify total scu
-        --bestbuy <string>    //cheapest commodity location, can use with --filter
-        --bestsell <string>    //most expensive sell location, can use with --filter
-        --minmax //get best profits for all commodities
-        --shop <string> //list shop prices
-        --save // saves --amount, --margin, --cost, --profit values as defaults
-        -n, --nocfg //skip saved settings
-        -h, --help    //this message
-    `);
-    return;
-}
+
+
+
+// todo: continue converting this
+
 
 if(values.shop){
     const market_array = Object.values(db.markets);
