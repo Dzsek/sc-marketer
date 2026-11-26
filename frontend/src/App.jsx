@@ -65,6 +65,7 @@ function App() {
 
   const [db,setDb] = useState(localStorage["db"] ? JSON.parse(localStorage.getItem("db")): {});
   const ref = useRef(null);
+  const iref = useRef(null);
   const [output, setOutput] = useState(initText);
   const [input, setInput] = useState("");
   const [history, setHistory] = useState([]);
@@ -104,6 +105,8 @@ function App() {
         {output}
       </div>
       <input 
+        ref={iref}
+        placeholder="> Enter command"
         value={input}
         onChange={(e)=>setInput(e.target.value)}
         onKeyDown={(e)=>{
@@ -134,6 +137,7 @@ function App() {
             }
 
             setInput(history[i]);
+            e.preventDefault();
           }
           if(e.key==="ArrowDown"){
             let i = histIndex;
