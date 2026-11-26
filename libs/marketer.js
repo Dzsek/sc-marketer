@@ -115,7 +115,7 @@ export default function (values, writeFunc, printFunc, data){
     --sync    //sync prices
     --syncall    //sync all data
     -f, --from <string>    //source market, required, best match
-    -t, --to <number>    //destination market, best match
+    -t, --to <string>    //destination market, best match
     --filter <string>    //filter by destination names
     -d, --commodity <string>    //filter by commodity names
     -a, --amount <number>    //scu to calculate profits and costs
