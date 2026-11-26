@@ -54,9 +54,17 @@ const initText = `
   SC Market research tool.
 
   Uses the api from https://uexcorp.space/
-  Pleas support UEXCORP as this wouldn't be possible without them.
+  Please support UEXCORP as this wouldn't be possible without them.
 
   Run --syncall before starting
+
+  Usage examples:
+
+  Get trade offers from tressler for 192 scu of cargo that pay above 20% for invested money and profit at least 70000 auec
+  --from tressler --amount 192 --margin 20 --profit 70k
+
+  Get trade offers from baijini to seraphim for 40scu of cargo with an investment of max 200000 auec and a profit of at least 20000 auec
+  --from baijini --to seraphim --amount 40 --cost 200k --profit 20k
 
   --help to show a list of available commands;
 `;
