@@ -13,7 +13,7 @@ export default function (values, writeFunc, printFunc, data){
             cost: values.cost
         }
 
-        writeFunc("user.cfg", JSON.stringify(tosave, undefined, 2));
+        writeFunc("user.json", tosave);
     }
 
     if(values.breakdown && values.amount){
@@ -49,13 +49,13 @@ export default function (values, writeFunc, printFunc, data){
                 const r1 = await fetch("https://api.uexcorp.uk/2.0/terminals");
                 const terminals = await r1.json();
                 const termSave = terminals.data.map(x=>mapTerminal(x)).reduce((a,i)=>{a[i.id] = i; return a}, {});
-                writeFunc("terminals.json", JSON.stringify(termSave, null, 2));
+                writeFunc("terminals.json", termSave);
                 db.terminals = termSave;
                 
                 const r2 = await fetch("https://api.uexcorp.uk/2.0/commodities");
                 const commodities = await r2.json();
                 const comSave = commodities.data.map(x=>mapCommodity(x)).reduce((a,i)=>{a[i.id] = i; return a}, {});
-                writeFunc("commodities.json", JSON.stringify(comSave, null, 2));
+                writeFunc("commodities.json", comSave);
                 db.commodities = comSave;
             }
 
@@ -69,7 +69,7 @@ export default function (values, writeFunc, printFunc, data){
                     termid: x.terminal
                 }));
             
-            writeFunc("prices.json", JSON.stringify(priceSave, null, 2));
+            writeFunc("prices.json", priceSave);
             db.prices = priceSave;
 
             const markets = {};
@@ -101,34 +101,36 @@ export default function (values, writeFunc, printFunc, data){
                 markets[x.terminal] = market;
             });
             
-            writeFunc("markets.json", JSON.stringify(markets, null, 2));
+            writeFunc("markets.json", markets);
             db.markets = markets;
-        };
 
+        };
+        
         execute();
+        printFunc("Data synced");
     }
 
     if(values.help){
         printFunc(`
-            --sync    //sync prices
-            --syncall    //sync all data
-            -f, --from <string>    //source market, required, best match
-            -t, --to <number>    //destination market, best match
-            --filter <string>    //filter by destination names
-            -d, --commodity <string>    //filter by commodity names
-            -a, --amount <number>    //scu to calculate profits and costs
-            -m, --margin <number>    //1-99 minimum profit margin in percents
-            -c, --cost <number>    //12345 or 12k, maximum uec willing to spend
-            -p, --profit <number>    //12345 or 12k, minimum profit in uec
-            --stock    //hide anything with 0 stock
-            -b, --breakdown <number>    //breakdown scu into crate sizes, provide maximum crate size as number, use with --amount to specify total scu
-            --bestbuy <string>    //cheapest commodity location, can use with --filter
-            --bestsell <string>    //most expensive sell location, can use with --filter
-            --minmax //get best profits for all commodities
-            --shop <string> //list shop prices
-            --save // saves --amount, --margin, --cost, --profit values as defaults
-            -n, --nocfg //skip saved settings
-            -h, --help    //this message
+    --sync    //sync prices
+    --syncall    //sync all data
+    -f, --from <string>    //source market, required, best match
+    -t, --to <number>    //destination market, best match
+    --filter <string>    //filter by destination names
+    -d, --commodity <string>    //filter by commodity names
+    -a, --amount <number>    //scu to calculate profits and costs
+    -m, --margin <number>    //1-99 minimum profit margin in percents
+    -c, --cost <number>    //12345 or 12k, maximum uec willing to spend
+    -p, --profit <number>    //12345 or 12k, minimum profit in uec
+    --stock    //hide anything with 0 stock
+    -b, --breakdown <number>    //breakdown scu into crate sizes, provide maximum crate size as number, use with --amount to specify total scu
+    --bestbuy <string>    //cheapest commodity location, can use with --filter
+    --bestsell <string>    //most expensive sell location, can use with --filter
+    --minmax //get best profits for all commodities
+    --shop <string> //list shop prices
+    --save // saves --amount, --margin, --cost, --profit values as defaults
+    -n, --nocfg //skip saved settings
+    -h, --help    //this message
         `);
         return;
     }
@@ -216,7 +218,7 @@ export default function (values, writeFunc, printFunc, data){
 
         if(values.bestsell){
             const viableMarkets = market_array.filter(x=>x.buy.some(x=>srch(values.bestsell, x.name)));
-            const commodities = viableMarkets.flatMap(x=>{
+            let commodities = viableMarkets.flatMap(x=>{
                 const coms = x.buy.find(y=>srch(values.bestsell, y.name));
                 return {
                     name: coms.name, 

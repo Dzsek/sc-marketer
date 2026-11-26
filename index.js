@@ -59,7 +59,7 @@ const db = {
 }
 
 const writefn = (file, content) =>{
-    fs.writeFileSync(`db/${file}`, content);
+    fs.writeFileSync(`db/${file}`, JSON.stringify(content, undefined, 2));
 }
 
 const printfn = (str)=>console.log(str);

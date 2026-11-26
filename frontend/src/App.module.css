@@ -1,0 +1,27 @@
+.basePage{
+    display: flex;
+    flex-direction: column;
+    background-color: black;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+
+    > div{
+        flex-grow: 1;
+        white-space: pre-wrap;
+        color: lightgreen;
+        font-family: 'Courier New', Courier, monospace;
+        margin: 1rem;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        overflow-x: hidden;
+    }
+
+    >input{
+        background-color: black;
+        color: lightgreen;
+        border: 1px solid green;
+        padding: 1rem;
+        font-family: 'Courier New', Courier, monospace;
+    }
+}
