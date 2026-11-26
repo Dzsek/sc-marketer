@@ -145,7 +145,7 @@ export default function (values, writeFunc, printFunc, data){
             return;
         }
 
-        printFunc(s.name);
+        printFunc(`${s.name}\t[${s.locator}]`);
         printFunc("-----Buys-----");
         s.buy.forEach(x=>printFunc(`[${x.amount}]\t\t${x.price}\t\t${x.name}`));
         printFunc("-----Sells-----");
