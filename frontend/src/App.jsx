@@ -88,7 +88,7 @@ function App() {
   const execute = function(input){
     let options = parseInput(input);
     if(options.clear) return "clear";
-    if(db.user){
+    if(db.user && !options.nocfg){
       options = {...db.user, ...options};
     }
     let x = "";
