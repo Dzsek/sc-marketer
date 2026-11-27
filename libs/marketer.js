@@ -386,7 +386,7 @@ export default function (values, writeFunc, printFunc, data){
         if(values.margin) fs = `${fs}${values.margin}% `;
         if(values.profit) fs = `${fs}MIN ${values.profit} PRF `;
         if(values.cost) fs = `${fs}MAX ${values.cost} CST`;
-        printFunc(`Showing ${totalOffers-filteredTotal}/${totalOffers}\t\t\tSettings: ${fs}`);
+        printFunc(`Showing ${filteredTotal}/${totalOffers}\t\t\tSettings: ${fs}`);
 
         return;
     }
