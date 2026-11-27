@@ -21,5 +21,6 @@ export const mapPrice = (input)=>({
     buyAmount: input.scu_sell,
     sellAmount: input.scu_buy,
     buyPrice: input.price_sell,
-    sellPrice: input.price_buy
+    sellPrice: input.price_buy,
+    containers: input.container_sizes
 });
