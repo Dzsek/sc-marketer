@@ -162,23 +162,25 @@ export default function (values, writeFunc, printFunc, data){
 
         const market_array = Object.values(db.markets);
         for(const mk of market_array){
-            for(const b of mk.buy){
-                const cmdt = res[b.name] ?? { sellPrice: 0, buyPrice: 0 };
-                res[b.name] = {
-                    ...cmdt,
-                    name: b.name,
-                    sellPrice: cmdt.sellPrice > b.price ? cmdt.sellPrice : b.price,
-                    sellLoc: cmdt.sellPrice > b.price ? cmdt.sellLoc : mk.name
+            for(const offer of mk.buy){
+                const existing = res[offer.name] ?? { sellPrice: 0, buyPrice: 0 };
+                res[offer.name] = {
+                    ...existing,
+                    name: offer.name,
+                    sellPrice: existing.sellPrice > offer.price ? existing.sellPrice : offer.price,
+                    sellLoc: existing.sellPrice > offer.price ? existing.sellLoc : mk.name,
+                    sellLocator: existing.sellPrice > offer.price ? existing.sellLocator : mk.locator
                 }
             }
             
-            for(const b of mk.sell){
-                const cmdt = res[b.name] ?? { sellPrice: 0, buyPrice: 0 };
-                res[b.name] = {
-                    ...cmdt,
-                    name: b.name,
-                    buyPrice: cmdt.buyPrice > b.price ? cmdt.buyPrice : b.price,
-                    buyLoc: cmdt.buyPrice > b.price ? cmdt.buyLoc : mk.name
+            for(const offer of mk.sell){
+                const existing = res[offer.name] ?? { sellPrice: 0, buyPrice: 0 };
+                res[offer.name] = {
+                    ...existing,
+                    name: offer.name,
+                    buyPrice: existing.buyPrice > offer.price ? existing.buyPrice : offer.price,
+                    buyLoc: existing.buyPrice > offer.price ? existing.buyLoc : mk.name,
+                    buyLocator: existing.buyPrice > offer.price ? existing.buyLocator : mk.locator
                 }
             }
         }
@@ -187,6 +189,11 @@ export default function (values, writeFunc, printFunc, data){
         result = result.filter(x=>x.buyPrice > 0 && x.sellPrice > 0 && x.buyPrice < x.sellPrice);
         result = result.map(x=> ({...x, profit: x.sellPrice - x.buyPrice}));
         result = result.toSorted((a,b)=>a.profit-b.profit);
+
+        if(values.filter){
+            result = result.filter(x=>srch(values.filter,x.sellLocator));
+            result = result.filter(x=>srch(values.filter,x.buyLocator));
+        }
 
         const formatCom = (o)=> `${formatUEC(o.profit)}\t\t${o.name}\t\t${o.buyLoc}\t\t[${formatUEC(o.buyPrice)} -> ${formatUEC(o.sellPrice)}]\t\t${o.sellLoc}`;
         result.forEach(x=>printFunc(formatCom(x)));
