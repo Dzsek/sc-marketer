@@ -78,6 +78,7 @@ export default function (values, writeFunc, printFunc, data){
                 {
                     name: x.terminal,
                     locator: db.terminals[x.termid].locator,
+                    maxcrate: db.terminals[x.termid].maxcrate,
                     sell: [],
                     buy: []
                 };
@@ -269,7 +270,8 @@ export default function (values, writeFunc, printFunc, data){
                         buyPrice: com.price,
                         sellPrice: b.price,
                         sourceStock: com.amount,
-                        destStock: b.amount
+                        destStock: b.amount,
+                        maxcrate: dest.maxcrate
                     });
                 }
             }
@@ -289,7 +291,8 @@ export default function (values, writeFunc, printFunc, data){
                             buyPrice: com.price,
                             sellPrice: b.price,
                             sourceStock: com.amount,
-                            destStock: b.amount
+                            destStock: b.amount,
+                            maxcrate: tgt.maxcrate
                         });
                     }
                 }
@@ -345,14 +348,14 @@ export default function (values, writeFunc, printFunc, data){
             offers = offers.filter(x=>x.sourceStock>0 && x.destStock>0);
         }
 
-        const formatter = x => `${Math.round(x.margin*100)}%\t[${formatUEC(x.cost)} + ${formatUEC(x.totalProfit)}]\t\t[${x.name} @ ${x.profit}]\t\t${x.buyPrice} -> ${x.sellPrice}\t\t${x.sourceStock} -> ${x.destStock} \t\t ${x.destination}`;
+        const formatter = x => `${Math.round(x.margin*100)}%\t[${formatUEC(x.cost)} + ${formatUEC(x.totalProfit)}]\t\t[${x.name} @ ${x.profit}]\t\t${x.buyPrice} -> ${x.sellPrice}\t\t${x.sourceStock} -> ${x.destStock} \t\t ${x.destination} [${x.maxcrate}scu]`;
 
         printFunc(`${source.name}\t\t\t[${source.locator.replaceAll('|', ' > ')}]`);
-        printFunc("MRG\t[TCST + TPROF]\t\t[NAME @ PROFIT]\t\tBUY -> SELL\t\tSTK SRC -> DEST \t\t DESTINATION");
+        printFunc("MRG\t[TCST + TPROF]\t\t[NAME @ PROFIT]\t\tBUY -> SELL\t\tSTK SRC -> DEST \t\t DESTINATION [MAX SIZE]");
         printFunc("---\t--------------\t\t---------------\t\t-----------\t\t----------------\t\t------------");
         offers.forEach(x=>printFunc(formatter(x)));
         printFunc("---\t--------------\t\t---------------\t\t-----------\t\t----------------\t\t------------");
-        printFunc("MRG\t[TCST + TPROF]\t\t[NAME @ PROFIT]\t\tBUY -> SELL\t\tSTK SRC -> DEST \t\t DESTINATION");
+        printFunc("MRG\t[TCST + TPROF]\t\t[NAME @ PROFIT]\t\tBUY -> SELL\t\tSTK SRC -> DEST \t\t DESTINATION [MAX SIZE]");
 
         return;
     }
