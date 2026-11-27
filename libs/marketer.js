@@ -333,6 +333,8 @@ export default function (values, writeFunc, printFunc, data){
 
         offers = offers.toSorted((a,b)=>a.margin-b.margin);
 
+        const totalOffers = offers.length;
+
         if(values.amount){
             offers = offers.map(x=>({
                 ...x,
@@ -368,6 +370,8 @@ export default function (values, writeFunc, printFunc, data){
             offers = offers.filter(x=>x.sourceStock>0 && x.destStock>0);
         }
 
+        const filteredTotal = offers.length;
+
         const formatter = x => `${Math.round(x.margin*100)}%\t[${formatUEC(x.cost)} + ${formatUEC(x.totalProfit)}]\t\t[${x.name} @ ${x.profit}]\t\t${x.buyPrice} -> ${x.sellPrice}\t\t${x.sourceStock} -> ${x.destStock} \t\t ${x.destination} [${x.containers}]`;
 
         printFunc(`${source.name}\t\t\t[${source.locator.replaceAll('|', ' > ')}]`);
@@ -376,6 +380,13 @@ export default function (values, writeFunc, printFunc, data){
         offers.forEach(x=>printFunc(formatter(x)));
         printFunc("---\t--------------\t\t---------------\t\t-----------\t\t----------------\t\t------------");
         printFunc("MRG\t[TCST + TPROF]\t\t[NAME @ PROFIT]\t\tBUY -> SELL\t\tSTK SRC -> DEST \t\t DESTINATION [SIZES]");
+        
+        let fs = "";
+        if(values.amount) fs = `${fs}${values.amount}scu `;
+        if(values.margin) fs = `${fs}${values.margin}% `;
+        if(values.profit) fs = `${fs}MIN ${values.profit} PRF `;
+        if(values.cost) fs = `${fs}MAX ${values.cost} CST`;
+        printFunc(`Showing ${totalOffers-filteredTotal}/${totalOffers}\t\t\tSettings: ${fs}`);
 
         return;
     }
