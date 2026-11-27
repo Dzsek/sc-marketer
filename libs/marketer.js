@@ -195,6 +195,15 @@ export default function (values, writeFunc, printFunc, data){
             result = result.filter(x=>srch(values.filter,x.buyLocator));
         }
 
+        if(values.amount){
+            result = result.map(x=> ({
+                ...x,
+                buyPrice: x.buyPrice * Number(values.amount),
+                sellPrice: x.sellPrice * Number(values.amount),
+                profit: x.profit * Number(values.amount),
+            }));
+        }
+
         const formatCom = (o)=> `${formatUEC(o.profit)}\t\t${o.name}\t\t${o.buyLoc}\t\t[${formatUEC(o.buyPrice)} -> ${formatUEC(o.sellPrice)}]\t\t${o.sellLoc}`;
         result.forEach(x=>printFunc(formatCom(x)));
         return;
